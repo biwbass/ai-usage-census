@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/biwbass/ai-usage-census/schema/daily-rollup.schema.json",
+  "title": "Daily rollup",
+  "description": "The one record a device sends for one day of opted-in work. It carries no user, device, ticket or repository identifier, and every count has already had randomized response applied on the device.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "day", "org", "role", "privacy", "activity"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "day": {
+      "description": "UTC calendar day the rollup covers. No finer time is ever sent.",
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "org": {
+      "description": "Org slug resolved on the device from the ticket tracker. One of a published list, or 'unknown'.",
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,40}$"
+    },
+    "role": {
+      "description": "Self-declared role, from a fixed list.",
+      "enum": ["engineer", "qa", "design", "product", "other"]
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mechanism", "p_truth"],
+      "properties": {
+        "mechanism": {
+          "description": "How noise was applied. 'k-rr' is k-ary randomized response on each labelled event before counting.",
+          "const": "k-rr"
+        },
+        "p_truth": {
+          "description": "Probability that each event's true label was kept. Otherwise a label was drawn uniformly from its category.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "activity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tickets_worked",
+        "turns_per_ticket",
+        "work_type",
+        "prompt_class",
+        "hard_signals",
+        "agents",
+        "bmad_phases"
+      ],
+      "properties": {
+        "tickets_worked": { "$ref": "#/$defs/count" },
+        "turns_per_ticket": {
+          "description": "Histogram of tickets by how many turns were spent on them that day.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["1-5", "6-15", "16-40", "41+"],
+          "properties": {
+            "1-5": { "$ref": "#/$defs/count" },
+            "6-15": { "$ref": "#/$defs/count" },
+            "16-40": { "$ref": "#/$defs/count" },
+            "41+": { "$ref": "#/$defs/count" }
+          }
+        },
+        "work_type": {
+          "description": "Tickets worked, by the work type the tracker gives them.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["feature", "bug", "chore", "spike", "unknown"],
+          "properties": {
+            "feature": { "$ref": "#/$defs/count" },
+            "bug": { "$ref": "#/$defs/count" },
+            "chore": { "$ref": "#/$defs/count" },
+            "spike": { "$ref": "#/$defs/count" },
+            "unknown": { "$ref": "#/$defs/count" }
+          }
+        },
+        "prompt_class": {
+          "description": "Prompts by the label the on-device classifier gave them. The prompt text is never sent.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["initial", "clarification", "refinement", "correction", "unclassified"],
+          "properties": {
+            "initial": { "$ref": "#/$defs/count" },
+            "clarification": { "$ref": "#/$defs/count" },
+            "refinement": { "$ref": "#/$defs/count" },
+            "correction": { "$ref": "#/$defs/count" },
+            "unclassified": { "$ref": "#/$defs/count" }
+          }
+        },
+        "hard_signals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["interrupts", "permission_rejections", "reverts"],
+          "properties": {
+            "interrupts": { "$ref": "#/$defs/count" },
+            "permission_rejections": { "$ref": "#/$defs/count" },
+            "reverts": { "$ref": "#/$defs/count" }
+          }
+        },
+        "agents": {
+          "description": "Subagent and plugin-agent invocations, split only by where the agent comes from. Agent names are not sent.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["internal", "third_party"],
+          "properties": {
+            "internal": { "$ref": "#/$defs/count" },
+            "third_party": { "$ref": "#/$defs/count" }
+          }
+        },
+        "bmad_phases": {
+          "description": "BMAD workflow invocations by phase.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["analysis", "planning", "solutioning", "implementation"],
+          "properties": {
+            "analysis": { "$ref": "#/$defs/count" },
+            "planning": { "$ref": "#/$defs/count" },
+            "solutioning": { "$ref": "#/$defs/count" },
+            "implementation": { "$ref": "#/$defs/count" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0 }
+  }
+}

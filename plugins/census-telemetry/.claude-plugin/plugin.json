@@ -1,0 +1,5 @@
+{
+  "name": "census-telemetry",
+  "version": "0.1.0",
+  "description": "Opt-in, privacy-preserving AI usage census: /telemetry on|off|preview"
+}
